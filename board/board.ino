@@ -1,29 +1,51 @@
-#define BAUDRATE 9600
+#define BAUDRATE 57600
 #define DELAY 100
-#define PIN 2
+#define AVIONICSPIN 2
+#define APHDGPIN 3
 #define LEDPIN 13
 
-bool SwitchIsOn;
+bool AvionicsIsOn; 
+bool AppHdgIsOn;
 
 // put your setup code here, to run once:
 void setup() {
   Serial.begin( BAUDRATE );                 // Initialize serial (USB) communication
-  pinMode(PIN, INPUT);                      // Define pin as input for the toggle switch
-  digitalWrite(PIN, HIGH);                  // Enable pull-up resistor on pin
+  pinMode(AVIONICSPIN, INPUT);                      // Define pin as input for the radio toggle switch
+  digitalWrite(AVIONICSPIN, HIGH);                  // Enable pull-up resistor on pin
+  pinMode(APHDGPIN, INPUT);                      // Define pin as input for the APP HDG button
+  digitalWrite(APHDGPIN, HIGH);                  // Enable pull-up resistor on pin
   pinMode(LEDPIN, OUTPUT);                  // Pin connected to the on-board LED
 
-  SwitchIsOn = (digitalRead(PIN) == LOW);   // Get initial state. ON is 0V due to pull-up configuration
-  Serial.println( SwitchIsOn ? "1" : "0");
+  AvionicsIsOn = (digitalRead(AVIONICSPIN) == LOW);   // Get initial state. ON is 0V due to pull-up configuration
+  Serial.println( AvionicsIsOn ? "AVIONICS-ON" : "AVIONICS-OFF");
+  AppHdgIsOn = (digitalRead(APHDGPIN) == LOW);   // Get initial state. ON is 0V due to pull-up configuration
+  Serial.println( AppHdgIsOn ? "APPHDG-ON" : "APPHDG-OFF");
 }
 
 // put your main code here, to run repeatedly:
 void loop() {
-  bool ActSwitchIsOn = (digitalRead(PIN) == LOW);   // Get current state
-  if( ActSwitchIsOn != SwitchIsOn )                 // Switch state has changed
+  bool tempStat;
+  
+  tempStat = (digitalRead(AVIONICSPIN) == LOW);   // Get current state
+  if( tempStat != AvionicsIsOn )                 // Switch state has changed
   {
-    SwitchIsOn = ActSwitchIsOn;
-    Serial.println( SwitchIsOn ? "ON" : "OFF");     // Sending the state via USB (COM)
-    digitalWrite(LEDPIN, SwitchIsOn ? HIGH : LOW);  // Display status on the on-board LED
+    AvionicsIsOn = tempStat;
+    Serial.println( AvionicsIsOn ? "AVIONICS-ON" : "AVIONICS-OFF");     // Sending the state via USB (COM)
   }
+
+  tempStat = (digitalRead(APHDGPIN) == LOW);   // Get current state
+  if( tempStat != AppHdgIsOn )                 // Switch state has changed
+  {
+    AppHdgIsOn = tempStat;
+    Serial.println( AppHdgIsOn ? "APPHDG-ON" : "APPHDG-OFF");     // Sending the state via USB (COM)
+  }
+
+  if(Serial.available() > 0)
+  {
+    int dataIn = Serial.read();
+    digitalWrite(LEDPIN, AvionicsIsOn && char(dataIn) == '1'  ? HIGH : LOW);
+    //Serial.print( "ARDUINO ACK: " ); Serial.println( dataIn );
+  }
+  
   delay( DELAY );
 }
